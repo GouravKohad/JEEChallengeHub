@@ -10,6 +10,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import Dashboard from "@/pages/Dashboard";
 import Challenges from "@/pages/Challenges";
 import Tasks from "@/pages/Tasks";
+import Progress from "@/pages/Progress";
+import StreakPage from "@/pages/StreakPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,18 +20,8 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/challenges" component={Challenges} />
       <Route path="/tasks" component={Tasks} />
-      <Route path="/progress" component={() => (
-        <div className="space-y-6" data-testid="progress-page">
-          <h1 className="text-3xl font-bold tracking-tight">Progress Tracker</h1>
-          <p className="text-muted-foreground">Coming soon: Detailed analytics and progress visualization</p>
-        </div>
-      )} />
-      <Route path="/streak" component={() => (
-        <div className="space-y-6" data-testid="streak-page">
-          <h1 className="text-3xl font-bold tracking-tight">Streak Counter</h1>
-          <p className="text-muted-foreground">Coming soon: Detailed streak tracking and motivation features</p>
-        </div>
-      )} />
+      <Route path="/progress" component={Progress} />
+      <Route path="/streak" component={StreakPage} />
       <Route component={NotFound} />
     </Switch>
   );
