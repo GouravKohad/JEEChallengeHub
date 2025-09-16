@@ -13,6 +13,7 @@ import Tasks from "@/pages/Tasks";
 import TaskManagement from "@/pages/TaskManagement";
 import Progress from "@/pages/Progress";
 import StreakPage from "@/pages/StreakPage";
+import Topics from "@/pages/Topics";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/task-management" component={TaskManagement} />
       <Route path="/progress" component={Progress} />
       <Route path="/streak" component={StreakPage} />
+      <Route path="/topic-management" component={Topics} />
       <Route component={NotFound} />
     </Switch>
   );
