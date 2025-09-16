@@ -4,7 +4,7 @@ import { addDays, format, differenceInDays } from "date-fns";
 interface TaskTemplate {
   subject: 'Physics' | 'Chemistry' | 'Mathematics';
   topic: string;
-  taskType: 'theory' | 'practice' | 'revision' | 'mock-test' | 'dpp';
+  taskType: 'theory' | 'practice' | 'revision' | 'mock-test' | 'dpp' | 'concept-mastery' | 'intensive-practice' | 'exam-simulation' | 'formula-practice' | 'previous-year' | 'speed-drill' | 'video-lecture' | 'concept-mapping';
   description: string;
   timeAllotted: number; // in minutes
   difficulty: 'easy' | 'medium' | 'hard';
@@ -121,8 +121,8 @@ const generateTasksForTopic = (
         {
           subject,
           topic,
-          taskType: 'theory',
-          description: `Focus study on ${topic} weak areas`,
+          taskType: 'video-lecture',
+          description: `Watch conceptual video on ${topic} fundamentals`,
           timeAllotted: Math.floor(totalDailyMinutes * 0.3),
           difficulty: 'easy'
         },
@@ -132,6 +132,140 @@ const generateTasksForTopic = (
           taskType: 'practice',
           description: `Intensive practice on ${topic} problem areas`,
           timeAllotted: Math.floor(totalDailyMinutes * 0.7),
+          difficulty: 'hard'
+        }
+      );
+      break;
+
+    case 'intensive-practice':
+      tasks.push(
+        {
+          subject,
+          topic,
+          taskType: 'speed-drill',
+          description: `Speed solving drill - ${topic} (time pressure)`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.6),
+          difficulty: 'hard'
+        },
+        {
+          subject,
+          topic,
+          taskType: 'intensive-practice',
+          description: `High-intensity problem marathon - ${topic}`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.4),
+          difficulty: 'hard'
+        }
+      );
+      break;
+
+    case 'concept-mastery':
+      tasks.push(
+        {
+          subject,
+          topic,
+          taskType: 'concept-mapping',
+          description: `Create concept map for ${topic} connections`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.3),
+          difficulty: 'medium'
+        },
+        {
+          subject,
+          topic,
+          taskType: 'concept-mastery',
+          description: `Deep conceptual study of ${topic} principles`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.4),
+          difficulty: 'medium'
+        },
+        {
+          subject,
+          topic,
+          taskType: 'practice',
+          description: `Apply ${topic} concepts to challenging problems`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.3),
+          difficulty: 'hard'
+        }
+      );
+      break;
+
+    case 'exam-simulation':
+      tasks.push(
+        {
+          subject,
+          topic,
+          taskType: 'exam-simulation',
+          description: `JEE-style exam simulation - ${topic} section`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.8),
+          difficulty: 'hard'
+        },
+        {
+          subject,
+          topic,
+          taskType: 'revision',
+          description: `Quick review of ${topic} exam mistakes`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.2),
+          difficulty: 'medium'
+        }
+      );
+      break;
+
+    case 'formula-sprint':
+      tasks.push(
+        {
+          subject,
+          topic,
+          taskType: 'formula-practice',
+          description: `Formula derivation and memorization - ${topic}`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.6),
+          difficulty: 'medium'
+        },
+        {
+          subject,
+          topic,
+          taskType: 'speed-drill',
+          description: `Quick formula application - ${topic}`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.4),
+          difficulty: 'easy'
+        }
+      );
+      break;
+
+    case 'previous-years':
+      tasks.push(
+        {
+          subject,
+          topic,
+          taskType: 'previous-year',
+          description: `Solve JEE previous year questions - ${topic}`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.7),
+          difficulty: 'hard'
+        },
+        {
+          subject,
+          topic,
+          taskType: 'revision',
+          description: `Analyze ${topic} question patterns and solutions`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.3),
+          difficulty: 'medium'
+        }
+      );
+      break;
+
+    case 'speed-accuracy':
+      tasks.push(
+        {
+          subject,
+          topic,
+          taskType: 'speed-drill',
+          description: `Speed practice - ${topic} (accuracy focus)`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.5),
+          difficulty: 'medium'
+        },
+        {
+          subject,
+          topic,
+          taskType: 'intensive-practice',
+          description: `Timed problem solving - ${topic}`,
+          timeAllotted: Math.floor(totalDailyMinutes * 0.5),
           difficulty: 'hard'
         }
       );
