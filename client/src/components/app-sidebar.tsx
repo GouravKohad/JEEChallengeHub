@@ -11,7 +11,7 @@ import {
   SidebarFooter
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
-import { Target, Calendar, TrendingUp, Settings, BookOpen, Zap, Table } from "lucide-react";
+import { Target, Calendar, TrendingUp, Settings, BookOpen, Zap, Table, FolderTree } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useChallenges } from "@/contexts/ChallengeContext";
 import ThemeToggle from "./ThemeToggle";
@@ -52,6 +52,12 @@ const navigationItems = [
     url: "/streak",
     icon: Zap,
     description: "Study streaks and motivation"
+  },
+  {
+    title: "Topic Management",
+    url: "/topic-management",
+    icon: FolderTree,
+    description: "Add, edit, and organize topics"
   }
 ];
 
