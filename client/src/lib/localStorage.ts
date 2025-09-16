@@ -4,7 +4,8 @@ const STORAGE_KEYS = {
   CHALLENGES: 'jee-challenges',
   TASKS: 'jee-tasks',
   SETTINGS: 'jee-settings',
-  TOPICS: 'jee-custom-topics'
+  TOPICS: 'jee-custom-topics',
+  CHAPTERS: 'jee-custom-chapters'
 } as const;
 
 export interface StorageSettings {
@@ -16,6 +17,12 @@ export interface CustomTopics {
   Physics: string[];
   Chemistry: string[];
   Mathematics: string[];
+}
+
+export interface CustomChapters {
+  Physics: { [chapter: string]: string[] };
+  Chemistry: { [chapter: string]: string[] };
+  Mathematics: { [chapter: string]: string[] };
 }
 
 export interface TopicCategory {
@@ -244,6 +251,82 @@ export const topicStorage = {
   }
 };
 
+// Custom Chapters operations
+export const chapterStorage = {
+  getAll(): CustomChapters {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.CHAPTERS);
+      return data ? JSON.parse(data) : { Physics: {}, Chemistry: {}, Mathematics: {} };
+    } catch (error) {
+      console.error('Failed to load custom chapters from localStorage:', error);
+      return { Physics: {}, Chemistry: {}, Mathematics: {} };
+    }
+  },
+
+  save(chapters: CustomChapters): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(chapters));
+    } catch (error) {
+      console.error('Failed to save custom chapters to localStorage:', error);
+    }
+  },
+
+  addChapter(subject: 'Physics' | 'Chemistry' | 'Mathematics', chapterName: string): CustomChapters {
+    const chapters = this.getAll();
+    if (!chapters[subject][chapterName]) {
+      chapters[subject][chapterName] = [];
+      this.save(chapters);
+    }
+    return chapters;
+  },
+
+  updateChapter(subject: 'Physics' | 'Chemistry' | 'Mathematics', oldName: string, newName: string): CustomChapters {
+    const chapters = this.getAll();
+    if (chapters[subject][oldName] && oldName !== newName) {
+      chapters[subject][newName] = chapters[subject][oldName];
+      delete chapters[subject][oldName];
+      this.save(chapters);
+    }
+    return chapters;
+  },
+
+  removeChapter(subject: 'Physics' | 'Chemistry' | 'Mathematics', chapterName: string): CustomChapters {
+    const chapters = this.getAll();
+    if (chapters[subject][chapterName]) {
+      delete chapters[subject][chapterName];
+      this.save(chapters);
+    }
+    return chapters;
+  },
+
+  addTopicToChapter(subject: 'Physics' | 'Chemistry' | 'Mathematics', chapterName: string, topic: string): CustomChapters {
+    const chapters = this.getAll();
+    if (!chapters[subject][chapterName]) {
+      chapters[subject][chapterName] = [];
+    }
+    if (!chapters[subject][chapterName].includes(topic)) {
+      chapters[subject][chapterName].push(topic);
+      this.save(chapters);
+    }
+    return chapters;
+  },
+
+  removeTopicFromChapter(subject: 'Physics' | 'Chemistry' | 'Mathematics', chapterName: string, topic: string): CustomChapters {
+    const chapters = this.getAll();
+    if (chapters[subject][chapterName]) {
+      chapters[subject][chapterName] = chapters[subject][chapterName].filter(t => t !== topic);
+      this.save(chapters);
+    }
+    return chapters;
+  },
+
+  clear(): CustomChapters {
+    const emptyChapters = { Physics: {}, Chemistry: {}, Mathematics: {} };
+    this.save(emptyChapters);
+    return emptyChapters;
+  }
+};
+
 // Utility functions
 export const clearAllData = (): void => {
   try {
@@ -262,6 +345,7 @@ export const exportData = () => {
     tasks: taskStorage.getAll(),
     settings: settingsStorage.get(),
     topics: topicStorage.getAll(),
+    chapters: chapterStorage.getAll(),
     exportDate: new Date().toISOString()
   };
 };
@@ -272,6 +356,7 @@ export const importData = (data: ReturnType<typeof exportData>) => {
     if (data.tasks) taskStorage.save(data.tasks);
     if (data.settings) settingsStorage.save(data.settings);
     if (data.topics) topicStorage.save(data.topics);
+    if (data.chapters) chapterStorage.save(data.chapters);
     console.log('Data imported successfully');
   } catch (error) {
     console.error('Failed to import data:', error);

@@ -8,11 +8,18 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Plus, Edit, Trash2, Search, BookOpen, Save, X } from 'lucide-react';
-import { topicStorage } from '@/lib/localStorage';
-import { getAllTopicsForSubject, isCustomTopic, organizeTopicsByCategory, searchTopics } from '@/lib/topicUtils';
+import { Plus, Edit, Trash2, Search, BookOpen, Save, X, FolderPlus } from 'lucide-react';
+import { topicStorage, chapterStorage } from '@/lib/localStorage';
+import { getAllTopicsForSubject, isCustomTopic, organizeTopicsByCategory, searchTopics, getTopicChapter } from '@/lib/topicUtils';
+import { getChaptersForSubject, getTopicsForChapter } from '@shared/schema';
 
 interface EditingTopic {
+  subject: 'Physics' | 'Chemistry' | 'Mathematics';
+  originalName: string;
+  newName: string;
+}
+
+interface EditingChapter {
   subject: 'Physics' | 'Chemistry' | 'Mathematics';
   originalName: string;
   newName: string;
@@ -22,9 +29,13 @@ export default function TopicManager() {
   const [activeSubject, setActiveSubject] = useState<'Physics' | 'Chemistry' | 'Mathematics'>('Physics');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isAddChapterDialogOpen, setIsAddChapterDialogOpen] = useState(false);
   const [newTopicName, setNewTopicName] = useState('');
   const [newTopicSubject, setNewTopicSubject] = useState<'Physics' | 'Chemistry' | 'Mathematics'>('Physics');
+  const [newTopicChapter, setNewTopicChapter] = useState('');
+  const [newChapterName, setNewChapterName] = useState('');
   const [editingTopic, setEditingTopic] = useState<EditingTopic | null>(null);
+  const [editingChapter, setEditingChapter] = useState<EditingChapter | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Force re-render when topics change
@@ -99,8 +110,79 @@ export default function TopicManager() {
     }
   };
 
+  // Chapter handlers
+  const handleAddChapter = () => {
+    if (!newChapterName.trim()) return;
+
+    try {
+      chapterStorage.addChapter(newTopicSubject, newChapterName.trim());
+      setNewChapterName('');
+      setIsAddChapterDialogOpen(false);
+      forceRefresh();
+    } catch (error) {
+      console.error('Failed to add chapter:', error);
+    }
+  };
+
+  const handleEditChapter = (subject: 'Physics' | 'Chemistry' | 'Mathematics', originalName: string) => {
+    setEditingChapter({
+      subject,
+      originalName,
+      newName: originalName
+    });
+  };
+
+  const handleSaveChapterEdit = () => {
+    if (!editingChapter || !editingChapter.newName.trim()) return;
+
+    try {
+      chapterStorage.updateChapter(editingChapter.subject, editingChapter.originalName, editingChapter.newName.trim());
+      setEditingChapter(null);
+      forceRefresh();
+    } catch (error) {
+      console.error('Failed to update chapter:', error);
+    }
+  };
+
+  const handleCancelChapterEdit = () => {
+    setEditingChapter(null);
+  };
+
+  const handleDeleteChapter = (subject: 'Physics' | 'Chemistry' | 'Mathematics', chapterName: string) => {
+    if (confirm(`Are you sure you want to delete the chapter "${chapterName}" and all its topics?`)) {
+      try {
+        chapterStorage.removeChapter(subject, chapterName);
+        forceRefresh();
+      } catch (error) {
+        console.error('Failed to delete chapter:', error);
+      }
+    }
+  };
+
+  const handleAddTopicToChapter = () => {
+    if (!newTopicName.trim() || !newTopicChapter) return;
+
+    try {
+      if (newTopicChapter === 'Custom Topics') {
+        // Add to general custom topics
+        topicStorage.addTopic(newTopicSubject, newTopicName.trim());
+      } else {
+        // Add to specific custom chapter
+        chapterStorage.addTopicToChapter(newTopicSubject, newTopicChapter, newTopicName.trim());
+      }
+      setNewTopicName('');
+      setNewTopicChapter('');
+      setIsAddDialogOpen(false);
+      forceRefresh();
+    } catch (error) {
+      console.error('Failed to add topic to chapter:', error);
+    }
+  };
+
   const SubjectTopicView = ({ subject }: { subject: 'Physics' | 'Chemistry' | 'Mathematics' }) => {
     const categorizedTopics = organizeTopicsByCategory(subject);
+    const customChapters = chapterStorage.getAll()[subject];
+    
     if (searchQuery) {
       const filteredTopics = searchTopics(searchQuery, subject) as string[];
       return (
@@ -124,33 +206,86 @@ export default function TopicManager() {
       );
     }
 
+    // Combine default chapters and custom chapters
+    const allChapters = { ...categorizedTopics };
+    Object.entries(customChapters).forEach(([chapterName, topics]) => {
+      allChapters[chapterName] = topics;
+    });
+
     return (
       <Accordion type="multiple" className="space-y-2" data-testid={`accordion-${subject.toLowerCase()}`}>
-        {Object.entries(categorizedTopics).map(([category, topics]) => (
-          <AccordionItem key={category} value={category}>
-            <AccordionTrigger className="text-left" data-testid={`accordion-trigger-${category.toLowerCase().replace(/\s+/g, '-')}`}>
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                <span>{category}</span>
-                <Badge variant="secondary">{topics.length}</Badge>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="grid gap-2 pt-2">
-                {topics.map((topic) => (
-                  <TopicItem
-                    key={topic}
-                    subject={subject}
-                    topic={topic}
-                    isCustom={isCustomTopic(subject, topic)}
-                    onEdit={() => handleEditTopic(subject, topic)}
-                    onDelete={() => handleDeleteTopic(subject, topic)}
-                  />
-                ))}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
+        {Object.entries(allChapters).map(([category, topics]) => {
+          const isCustomChapter = customChapters[category] !== undefined;
+          const isEditingThisChapter = editingChapter?.subject === subject && editingChapter?.originalName === category;
+          
+          return (
+            <AccordionItem key={category} value={category}>
+              <AccordionTrigger className="text-left" data-testid={`accordion-trigger-${category.toLowerCase().replace(/\s+/g, '-')}`}>
+                <div className="flex items-center justify-between w-full pr-4">
+                  {isEditingThisChapter ? (
+                    <div className="flex items-center gap-2 flex-1" onClick={(e) => e.stopPropagation()}>
+                      <Input
+                        value={editingChapter?.newName || ''}
+                        onChange={(e) => setEditingChapter(prev => prev ? { ...prev, newName: e.target.value } : null)}
+                        className="flex-1"
+                        data-testid={`input-edit-chapter-${category}`}
+                      />
+                      <Button size="sm" onClick={handleSaveChapterEdit} data-testid={`button-save-chapter-${category}`}>
+                        <Save className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={handleCancelChapterEdit} data-testid={`button-cancel-chapter-${category}`}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        <span>{category}</span>
+                        <Badge variant="secondary">{topics.length}</Badge>
+                        {isCustomChapter && <Badge variant="outline">Custom</Badge>}
+                      </div>
+                      {isCustomChapter && (
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => handleEditChapter(subject, category)}
+                            data-testid={`button-edit-chapter-${category}`}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => handleDeleteChapter(subject, category)}
+                            data-testid={`button-delete-chapter-${category}`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid gap-2 pt-2">
+                  {topics.map((topic) => (
+                    <TopicItem
+                      key={topic}
+                      subject={subject}
+                      topic={topic}
+                      isCustom={isCustomTopic(subject, topic) || isCustomChapter}
+                      onEdit={() => handleEditTopic(subject, topic)}
+                      onDelete={() => handleDeleteTopic(subject, topic)}
+                    />
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
       </Accordion>
     );
   };
@@ -281,6 +416,56 @@ export default function TopicManager() {
             Topic Management
           </CardTitle>
           <div className="flex items-center gap-2">
+            <Dialog open={isAddChapterDialogOpen} onOpenChange={setIsAddChapterDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" data-testid="button-add-chapter">
+                  <FolderPlus className="h-4 w-4 mr-2" />
+                  Add Chapter
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Chapter</DialogTitle>
+                  <DialogDescription>
+                    Create a new custom chapter to organize your topics better.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="chapter-subject">Subject</Label>
+                    <Select value={newTopicSubject} onValueChange={(value: any) => setNewTopicSubject(value)}>
+                      <SelectTrigger data-testid="select-chapter-subject">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Physics">Physics</SelectItem>
+                        <SelectItem value="Chemistry">Chemistry</SelectItem>
+                        <SelectItem value="Mathematics">Mathematics</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="chapter-name">Chapter Name</Label>
+                    <Input
+                      id="chapter-name"
+                      value={newChapterName}
+                      onChange={(e) => setNewChapterName(e.target.value)}
+                      placeholder="Enter chapter name"
+                      data-testid="input-chapter-name"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsAddChapterDialogOpen(false)} data-testid="button-cancel-add-chapter">
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAddChapter} disabled={!newChapterName.trim()} data-testid="button-save-add-chapter">
+                    Add Chapter
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button data-testid="button-add-topic">
@@ -292,7 +477,7 @@ export default function TopicManager() {
                 <DialogHeader>
                   <DialogTitle>Add New Topic</DialogTitle>
                   <DialogDescription>
-                    Add a custom topic to any subject. Custom topics can be edited and deleted.
+                    Add a custom topic to any subject. You can add it to an existing chapter or create a new one.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -306,6 +491,22 @@ export default function TopicManager() {
                         <SelectItem value="Physics">Physics</SelectItem>
                         <SelectItem value="Chemistry">Chemistry</SelectItem>
                         <SelectItem value="Mathematics">Mathematics</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="chapter">Chapter (Optional)</Label>
+                    <Select value={newTopicChapter} onValueChange={setNewTopicChapter}>
+                      <SelectTrigger data-testid="select-topic-chapter">
+                        <SelectValue placeholder="Select a chapter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Custom Topics">Custom Topics (Default)</SelectItem>
+                        {Object.keys(chapterStorage.getAll()[newTopicSubject]).map((chapter) => (
+                          <SelectItem key={chapter} value={chapter}>
+                            {chapter}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -324,7 +525,11 @@ export default function TopicManager() {
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} data-testid="button-cancel-add">
                     Cancel
                   </Button>
-                  <Button onClick={handleAddTopic} disabled={!newTopicName.trim()} data-testid="button-save-add">
+                  <Button 
+                    onClick={handleAddTopicToChapter} 
+                    disabled={!newTopicName.trim()} 
+                    data-testid="button-save-add"
+                  >
                     Add Topic
                   </Button>
                 </DialogFooter>

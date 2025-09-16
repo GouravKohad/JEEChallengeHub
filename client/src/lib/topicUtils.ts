@@ -1,4 +1,4 @@
-import { JEE_TOPICS } from '@shared/schema';
+import { JEE_TOPICS, JEE_CHAPTERS, getChaptersForSubject, getTopicsForChapter, getAllTopicsForSubject as getSchemaTopics, getChapterForTopic } from '@shared/schema';
 import { CustomTopics, topicStorage } from '@/lib/localStorage';
 
 // Helper function to get all topics (default + custom) for a subject
@@ -30,48 +30,58 @@ export const getCustomTopics = (): CustomTopics => {
   return topicStorage.getAll();
 };
 
-// Helper function to organize topics by category (for display purposes)
+// Helper function to organize topics by category/chapter (for display purposes)
 export const organizeTopicsByCategory = (subject: 'Physics' | 'Chemistry' | 'Mathematics') => {
-  const allTopics = getAllTopicsForSubject(subject);
   const categories: { [key: string]: string[] } = {};
   
-  // Organize default topics by their comment-based categories
-  const defaultTopics = JEE_TOPICS[subject];
-  const customTopics = topicStorage.getAll()[subject];
+  // Get default topics organized by chapters from the new schema
+  const chapters = getChaptersForSubject(subject);
   
-  // For Physics
-  if (subject === 'Physics') {
-    categories['Mechanics'] = defaultTopics.slice(0, 31);
-    categories['Properties of Matter'] = defaultTopics.slice(31, 37);
-    categories['Heat and Thermodynamics'] = defaultTopics.slice(37, 45);
-    categories['Oscillations and Waves'] = defaultTopics.slice(45, 52);
-    categories['Electricity and Magnetism'] = defaultTopics.slice(52, 70);
-    categories['Electromagnetic Waves and Optics'] = defaultTopics.slice(70, 80);
-    categories['Modern Physics'] = defaultTopics.slice(80);
-  }
-  // For Chemistry
-  else if (subject === 'Chemistry') {
-    categories['Physical Chemistry'] = defaultTopics.slice(0, 48);
-    categories['Inorganic Chemistry'] = defaultTopics.slice(48, 62);
-    categories['Organic Chemistry'] = defaultTopics.slice(62);
-  }
-  // For Mathematics
-  else if (subject === 'Mathematics') {
-    categories['Algebra'] = defaultTopics.slice(0, 26);
-    categories['Coordinate Geometry'] = defaultTopics.slice(26, 40);
-    categories['Calculus'] = defaultTopics.slice(40, 58);
-    categories['Vector Algebra and Geometry'] = defaultTopics.slice(58, 62);
-    categories['Statistics and Probability'] = defaultTopics.slice(62, 70);
-    categories['Mathematical Reasoning'] = defaultTopics.slice(70, 76);
-    categories['Matrices and Determinants'] = defaultTopics.slice(76);
-  }
+  chapters.forEach(chapter => {
+    const chapterTopics = getTopicsForChapter(subject, chapter);
+    if (chapterTopics.length > 0) {
+      categories[chapter] = chapterTopics;
+    }
+  });
   
   // Add custom topics to a separate category
+  const customTopics = topicStorage.getAll()[subject];
   if (customTopics.length > 0) {
     categories['Custom Topics'] = customTopics;
   }
   
   return categories;
+};
+
+// New chapter-aware helper functions
+
+// Helper function to get all chapters with their topics (including custom)
+export const getChaptersWithTopics = (subject: 'Physics' | 'Chemistry' | 'Mathematics') => {
+  const chapters = getChaptersForSubject(subject);
+  const result: { [chapter: string]: string[] } = {};
+  
+  chapters.forEach(chapter => {
+    result[chapter] = getTopicsForChapter(subject, chapter);
+  });
+  
+  // Add custom topics if they exist
+  const customTopics = topicStorage.getAll()[subject];
+  if (customTopics.length > 0) {
+    result['Custom Topics'] = customTopics;
+  }
+  
+  return result;
+};
+
+// Helper function to get chapter for a topic (including custom topics)
+export const getTopicChapter = (subject: 'Physics' | 'Chemistry' | 'Mathematics', topic: string): string => {
+  // First check if it's a custom topic
+  if (isCustomTopic(subject, topic)) {
+    return 'Custom Topics';
+  }
+  
+  // Otherwise, get the chapter from the schema
+  return getChapterForTopic(subject, topic) || 'Unknown';
 };
 
 // Helper function for topic search
