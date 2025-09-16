@@ -10,6 +10,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import Dashboard from "@/pages/Dashboard";
 import Challenges from "@/pages/Challenges";
 import Tasks from "@/pages/Tasks";
+import TaskManagement from "@/pages/TaskManagement";
 import Progress from "@/pages/Progress";
 import StreakPage from "@/pages/StreakPage";
 import NotFound from "@/pages/not-found";
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/challenges" component={Challenges} />
       <Route path="/tasks" component={Tasks} />
+      <Route path="/task-management" component={TaskManagement} />
       <Route path="/progress" component={Progress} />
       <Route path="/streak" component={StreakPage} />
       <Route component={NotFound} />
@@ -36,8 +38,8 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ChallengeProvider>
-        <TooltipProvider>
+      <TooltipProvider>
+        <ChallengeProvider>
           <SidebarProvider style={style as React.CSSProperties}>
             <div className="flex h-screen w-full">
               <AppSidebar />
@@ -55,8 +57,8 @@ function App() {
             </div>
           </SidebarProvider>
           <Toaster />
-        </TooltipProvider>
-      </ChallengeProvider>
+        </ChallengeProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

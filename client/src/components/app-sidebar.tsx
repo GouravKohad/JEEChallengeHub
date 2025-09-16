@@ -11,7 +11,7 @@ import {
   SidebarFooter
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
-import { Target, Calendar, TrendingUp, Settings, BookOpen, Zap } from "lucide-react";
+import { Target, Calendar, TrendingUp, Settings, BookOpen, Zap, Table } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useChallenges } from "@/contexts/ChallengeContext";
 import ThemeToggle from "./ThemeToggle";
@@ -34,6 +34,12 @@ const navigationItems = [
     url: "/tasks",
     icon: Calendar,
     description: "Today's study tasks"
+  },
+  {
+    title: "Task Management",
+    url: "/task-management",
+    icon: Table,
+    description: "Excel-like task editor"
   },
   {
     title: "Progress Tracker",

@@ -18,6 +18,7 @@ type ChallengeAction =
   | { type: 'DELETE_CHALLENGE'; challengeId: string }
   | { type: 'ADD_TASKS'; tasks: DailyTask[] }
   | { type: 'UPDATE_TASK'; taskId: string; updates: Partial<DailyTask> }
+  | { type: 'DELETE_TASK'; taskId: string }
   | { type: 'REFRESH_PROGRESS'; challengeId: string };
 
 const initialState: ChallengeState = {
@@ -73,6 +74,11 @@ function challengeReducer(state: ChallengeState, action: ChallengeAction): Chall
           t.id === action.taskId ? { ...t, ...action.updates } : t
         ),
       };
+    case 'DELETE_TASK':
+      return {
+        ...state,
+        tasks: state.tasks.filter(t => t.id !== action.taskId),
+      };
     case 'REFRESH_PROGRESS':
       const challengeToUpdate = state.challenges.find(c => c.id === action.challengeId);
       if (challengeToUpdate) {
@@ -96,6 +102,8 @@ interface ChallengeContextType {
   updateChallenge: (challengeId: string, updates: Partial<Challenge>) => Promise<void>;
   deleteChallenge: (challengeId: string) => Promise<void>;
   updateTask: (taskId: string, updates: Partial<DailyTask>) => Promise<void>;
+  addTask: (task: Omit<DailyTask, 'id'>) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
   getTasksForDate: (date: string) => DailyTask[];
   getTasksForChallenge: (challengeId: string) => DailyTask[];
   getChallengeStats: () => {
@@ -228,8 +236,62 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addTask = async (taskData: Omit<DailyTask, 'id'>) => {
+    try {
+      const task: DailyTask = {
+        ...taskData,
+        id: `task-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+        completed: false,
+      };
+
+      taskStorage.add(task);
+      dispatch({ type: 'ADD_TASKS', tasks: [task] });
+
+      // Refresh progress for the challenge this task belongs to
+      setTimeout(() => {
+        dispatch({ type: 'REFRESH_PROGRESS', challengeId: task.challengeId });
+        challengeStorage.update(task.challengeId, {}); // Trigger storage update
+      }, 100);
+    } catch (error) {
+      console.error('Failed to add task:', error);
+      throw error;
+    }
+  };
+
+  const deleteTask = async (taskId: string) => {
+    try {
+      // Find the task to get the challenge ID before deleting
+      const task = state.tasks.find(t => t.id === taskId);
+      
+      taskStorage.remove(taskId);
+      dispatch({ type: 'DELETE_TASK', taskId });
+
+      // Refresh progress for the challenge this task belonged to
+      if (task) {
+        setTimeout(() => {
+          dispatch({ type: 'REFRESH_PROGRESS', challengeId: task.challengeId });
+          challengeStorage.update(task.challengeId, {}); // Trigger storage update
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      throw error;
+    }
+  };
+
   const getTasksForDate = (date: string): DailyTask[] => {
-    return state.tasks.filter(task => task.date === date);
+    // Build a map of challengeId -> status for efficient lookups
+    const challengeStatusMap = new Map(
+      state.challenges.map(challenge => [challenge.id, challenge.status])
+    );
+
+    return state.tasks.filter(task => {
+      if (task.date !== date) return false;
+      
+      // Check if the challenge exists and is not paused
+      const challengeStatus = challengeStatusMap.get(task.challengeId);
+      return challengeStatus && challengeStatus !== 'paused';
+    });
   };
 
   const getTasksForChallenge = (challengeId: string): DailyTask[] => {
@@ -267,6 +329,8 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
     updateChallenge,
     deleteChallenge,
     updateTask,
+    addTask,
+    deleteTask,
     getTasksForDate,
     getTasksForChallenge,
     getChallengeStats,
