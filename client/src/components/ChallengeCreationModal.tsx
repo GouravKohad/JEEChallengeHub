@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Calendar, Clock, BookOpen } from "lucide-react";
 import { CHALLENGE_TYPES, JEE_SUBJECTS, JEE_TOPICS, InsertChallenge } from "@shared/schema";
 import { addDays, format } from "date-fns";
+import { getAllTopicsForSubject } from "@/lib/topicUtils";
 
 interface ChallengeCreationModalProps {
   onCreateChallenge?: (challenge: InsertChallenge) => void;
@@ -203,7 +204,7 @@ export default function ChallengeCreationModal({ onCreateChallenge, children }: 
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {JEE_TOPICS[subject as keyof typeof JEE_TOPICS].map((topic) => (
+                      {getAllTopicsForSubject(subject as 'Physics' | 'Chemistry' | 'Mathematics').map((topic) => (
                         <div key={topic} className="flex items-center space-x-2">
                           <Checkbox 
                             id={`${subject}-${topic}`}
