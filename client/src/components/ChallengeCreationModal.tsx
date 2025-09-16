@@ -19,7 +19,7 @@ interface ChallengeCreationModalProps {
 
 export default function ChallengeCreationModal({ onCreateChallenge, children }: ChallengeCreationModalProps) {
   const [open, setOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState(CHALLENGE_TYPES[0]);
+  const [selectedType, setSelectedType] = useState<typeof CHALLENGE_TYPES[number]>(CHALLENGE_TYPES[0]);
   const [customName, setCustomName] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<Record<string, string[]>>({});

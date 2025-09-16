@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Target, Calendar, TrendingUp, Settings, BookOpen, Zap } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useChallenges } from "@/contexts/ChallengeContext";
 import ThemeToggle from "./ThemeToggle";
 
 const navigationItems = [
@@ -51,11 +51,8 @@ const navigationItems = [
 
 export function AppSidebar() {
   const [location] = useLocation();
-  // todo: remove mock functionality
-  const mockStats = {
-    activeChallenges: 3,
-    currentStreak: 12
-  };
+  const { getChallengeStats } = useChallenges();
+  const stats = getChallengeStats();
 
   return (
     <Sidebar>
@@ -104,13 +101,13 @@ export function AppSidebar() {
               <div className="flex items-center justify-between p-2 rounded-md bg-sidebar-accent/50">
                 <span className="text-sm">Active Challenges</span>
                 <Badge variant="secondary" data-testid="badge-active-challenges">
-                  {mockStats.activeChallenges}
+                  {stats.active}
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-2 rounded-md bg-sidebar-accent/50">
                 <span className="text-sm">Current Streak</span>
                 <Badge className="bg-chart-2 text-white" data-testid="badge-current-streak">
-                  {mockStats.currentStreak} days
+                  {stats.currentStreak} days
                 </Badge>
               </div>
             </div>

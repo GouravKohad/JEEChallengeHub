@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { ChallengeProvider } from "@/contexts/ChallengeContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import Dashboard from "@/pages/Dashboard";
 import Challenges from "@/pages/Challenges";
@@ -43,25 +44,27 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <SidebarProvider style={style as React.CSSProperties}>
-          <div className="flex h-screen w-full">
-            <AppSidebar />
-            <div className="flex flex-col flex-1">
-              <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <SidebarTrigger data-testid="button-sidebar-toggle" />
-                <div className="flex items-center gap-2">
-                  <ThemeToggle />
-                </div>
-              </header>
-              <main className="flex-1 overflow-auto p-6">
-                <Router />
-              </main>
+      <ChallengeProvider>
+        <TooltipProvider>
+          <SidebarProvider style={style as React.CSSProperties}>
+            <div className="flex h-screen w-full">
+              <AppSidebar />
+              <div className="flex flex-col flex-1">
+                <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                  <SidebarTrigger data-testid="button-sidebar-toggle" />
+                  <div className="flex items-center gap-2">
+                    <ThemeToggle />
+                  </div>
+                </header>
+                <main className="flex-1 overflow-auto p-6">
+                  <Router />
+                </main>
+              </div>
             </div>
-          </div>
-        </SidebarProvider>
-        <Toaster />
-      </TooltipProvider>
+          </SidebarProvider>
+          <Toaster />
+        </TooltipProvider>
+      </ChallengeProvider>
     </QueryClientProvider>
   );
 }

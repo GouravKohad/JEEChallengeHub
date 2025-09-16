@@ -128,13 +128,13 @@ export default function DailyTaskList({ tasks, date, onTaskToggle, onAddNote }: 
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Badge className={getSubjectColor(task.subject)} size="sm">
+                      <Badge className={getSubjectColor(task.subject)}>
                         {task.subject}
                       </Badge>
-                      <Badge variant="outline" size="sm">
+                      <Badge variant="outline">
                         {task.taskType.replace('-', ' ')}
                       </Badge>
-                      <Badge className={getDifficultyColor(task.difficulty)} size="sm">
+                      <Badge className={getDifficultyColor(task.difficulty)}>
                         {task.difficulty}
                       </Badge>
                     </div>

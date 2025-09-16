@@ -1,118 +1,47 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, BookOpen, Calendar, Target } from "lucide-react";
+import { useChallenges } from "@/contexts/ChallengeContext";
 import DashboardStats from "@/components/DashboardStats";
 import ChallengeCard from "@/components/ChallengeCard";
 import ChallengeCreationModal from "@/components/ChallengeCreationModal";
 import StreakCounter from "@/components/StreakCounter";
-import { Challenge, InsertChallenge } from "@shared/schema";
+import { InsertChallenge } from "@shared/schema";
 
 export default function Dashboard() {
-  // todo: remove mock functionality
-  const [challenges, setChallenges] = useState<Challenge[]>([
-    {
-      id: 'challenge-1',
-      type: 'revision',
-      name: '15 Days Physics Revision Challenge',
-      duration: 15,
-      subjects: ['Physics'],
-      topics: { Physics: ['Mechanics', 'Thermodynamics', 'Electromagnetism'] },
-      startDate: '2024-01-15',
-      endDate: '2024-01-30',
-      dailyTimeHours: 4,
-      status: 'active',
-      createdAt: '2024-01-15T00:00:00Z',
-      progress: {
-        completedDays: 8,
-        totalDays: 15,
-        completedTasks: 24,
-        totalTasks: 45,
-        currentStreak: 5,
-        longestStreak: 7
-      }
-    },
-    {
-      id: 'challenge-2',
-      type: 'dpp',
-      name: '30 Days Math DPP Challenge',
-      duration: 30,
-      subjects: ['Mathematics'],
-      topics: { Mathematics: ['Calculus', 'Algebra', 'Trigonometry'] },
-      startDate: '2024-01-01',
-      endDate: '2024-01-31',
-      dailyTimeHours: 3,
-      status: 'active',
-      createdAt: '2024-01-01T00:00:00Z',
-      progress: {
-        completedDays: 18,
-        totalDays: 30,
-        completedTasks: 54,
-        totalTasks: 90,
-        currentStreak: 12,
-        longestStreak: 15
-      }
-    },
-    {
-      id: 'challenge-3',
-      type: 'backlog',
-      name: 'Chemistry Backlog Clearance',
-      duration: 20,
-      subjects: ['Chemistry'],
-      topics: { Chemistry: ['Organic Chemistry', 'Physical Chemistry'] },
-      startDate: '2023-12-15',
-      endDate: '2024-01-04',
-      dailyTimeHours: 5,
-      status: 'completed',
-      createdAt: '2023-12-15T00:00:00Z',
-      progress: {
-        completedDays: 20,
-        totalDays: 20,
-        completedTasks: 60,
-        totalTasks: 60,
-        currentStreak: 0,
-        longestStreak: 20
-      }
-    }
-  ]);
+  const { state, createChallenge, updateChallenge, getChallengeStats } = useChallenges();
+  const { challenges, loading } = state;
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64" data-testid="loading-dashboard">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   const activeChallenges = challenges.filter(c => c.status === 'active');
   const completedChallenges = challenges.filter(c => c.status === 'completed');
-  const currentStreak = Math.max(...challenges.map(c => c.progress.currentStreak));
-  const totalStudyHours = challenges.reduce((acc, c) => 
-    acc + (c.progress.completedDays * c.dailyTimeHours), 0
-  );
-  const totalTasksCompleted = challenges.reduce((acc, c) => 
-    acc + c.progress.completedTasks, 0
-  );
+  const stats = getChallengeStats();
 
-  const handleCreateChallenge = (newChallenge: InsertChallenge) => {
-    console.log('Creating new challenge:', newChallenge);
-    const challenge: Challenge = {
-      ...newChallenge,
-      id: `challenge-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      progress: {
-        completedDays: 0,
-        totalDays: newChallenge.duration,
-        completedTasks: 0,
-        totalTasks: newChallenge.duration * 3, // Estimated 3 tasks per day
-        currentStreak: 0,
-        longestStreak: 0
-      }
-    };
-    setChallenges(prev => [challenge, ...prev]);
+  const handleCreateChallenge = async (newChallenge: InsertChallenge) => {
+    try {
+      await createChallenge(newChallenge);
+    } catch (error) {
+      console.error('Failed to create challenge:', error);
+    }
   };
 
-  const handleChallengeAction = (challengeId: string, action: string) => {
-    console.log(`${action} challenge:`, challengeId);
-    setChallenges(prev => prev.map(c => {
-      if (c.id === challengeId) {
-        if (action === 'pause') return { ...c, status: 'paused' as const };
-        if (action === 'resume' || action === 'start') return { ...c, status: 'active' as const };
-      }
-      return c;
-    }));
+  const handleChallengeAction = async (challengeId: string, action: string) => {
+    try {
+      const updates: any = {};
+      if (action === 'pause') updates.status = 'paused';
+      if (action === 'resume' || action === 'start') updates.status = 'active';
+      
+      await updateChallenge(challengeId, updates);
+    } catch (error) {
+      console.error(`Failed to ${action} challenge:`, error);
+    }
   };
 
   return (
@@ -135,12 +64,12 @@ export default function Dashboard() {
 
       {/* Stats Overview */}
       <DashboardStats
-        totalChallenges={challenges.length}
-        activeChallenges={activeChallenges.length}
-        completedChallenges={completedChallenges.length}
-        currentStreak={currentStreak}
-        totalStudyHours={totalStudyHours}
-        tasksCompleted={totalTasksCompleted}
+        totalChallenges={stats.total}
+        activeChallenges={stats.active}
+        completedChallenges={stats.completed}
+        currentStreak={stats.currentStreak}
+        totalStudyHours={stats.totalStudyHours}
+        tasksCompleted={stats.totalTasksCompleted}
       />
 
       {/* Main Content Grid */}
@@ -208,8 +137,8 @@ export default function Dashboard() {
         <div className="space-y-6">
           {/* Streak Counter */}
           <StreakCounter
-            currentStreak={currentStreak}
-            longestStreak={Math.max(...challenges.map(c => c.progress.longestStreak))}
+            currentStreak={stats.currentStreak}
+            longestStreak={Math.max(0, ...challenges.map(c => c.progress.longestStreak))}
             totalDays={challenges.reduce((acc, c) => acc + c.progress.completedDays, 0)}
             studiedToday={activeChallenges.some(c => c.progress.currentStreak > 0)}
           />
