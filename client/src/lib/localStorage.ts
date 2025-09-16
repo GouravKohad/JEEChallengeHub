@@ -3,12 +3,26 @@ import { Challenge, DailyTask } from "@shared/schema";
 const STORAGE_KEYS = {
   CHALLENGES: 'jee-challenges',
   TASKS: 'jee-tasks',
-  SETTINGS: 'jee-settings'
+  SETTINGS: 'jee-settings',
+  TOPICS: 'jee-custom-topics'
 } as const;
 
 export interface StorageSettings {
   theme: 'light' | 'dark';
   userId: string;
+}
+
+export interface CustomTopics {
+  Physics: string[];
+  Chemistry: string[];
+  Mathematics: string[];
+}
+
+export interface TopicCategory {
+  id: string;
+  name: string;
+  subject: 'Physics' | 'Chemistry' | 'Mathematics';
+  topics: string[];
 }
 
 // Challenge operations
@@ -166,6 +180,70 @@ export const settingsStorage = {
   }
 };
 
+// Custom Topics operations
+export const topicStorage = {
+  getAll(): CustomTopics {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.TOPICS);
+      return data ? JSON.parse(data) : { Physics: [], Chemistry: [], Mathematics: [] };
+    } catch (error) {
+      console.error('Failed to load custom topics from localStorage:', error);
+      return { Physics: [], Chemistry: [], Mathematics: [] };
+    }
+  },
+
+  save(topics: CustomTopics): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.TOPICS, JSON.stringify(topics));
+    } catch (error) {
+      console.error('Failed to save custom topics to localStorage:', error);
+    }
+  },
+
+  addTopic(subject: 'Physics' | 'Chemistry' | 'Mathematics', topic: string): CustomTopics {
+    const topics = this.getAll();
+    if (!topics[subject].includes(topic)) {
+      topics[subject].push(topic);
+      this.save(topics);
+    }
+    return topics;
+  },
+
+  updateTopic(subject: 'Physics' | 'Chemistry' | 'Mathematics', oldTopic: string, newTopic: string): CustomTopics {
+    const topics = this.getAll();
+    const index = topics[subject].indexOf(oldTopic);
+    if (index !== -1) {
+      topics[subject][index] = newTopic;
+      this.save(topics);
+    }
+    return topics;
+  },
+
+  removeTopic(subject: 'Physics' | 'Chemistry' | 'Mathematics', topic: string): CustomTopics {
+    const topics = this.getAll();
+    topics[subject] = topics[subject].filter(t => t !== topic);
+    this.save(topics);
+    return topics;
+  },
+
+  addMultipleTopics(subject: 'Physics' | 'Chemistry' | 'Mathematics', newTopics: string[]): CustomTopics {
+    const topics = this.getAll();
+    newTopics.forEach(topic => {
+      if (!topics[subject].includes(topic)) {
+        topics[subject].push(topic);
+      }
+    });
+    this.save(topics);
+    return topics;
+  },
+
+  clear(): CustomTopics {
+    const emptyTopics = { Physics: [], Chemistry: [], Mathematics: [] };
+    this.save(emptyTopics);
+    return emptyTopics;
+  }
+};
+
 // Utility functions
 export const clearAllData = (): void => {
   try {
@@ -183,6 +261,7 @@ export const exportData = () => {
     challenges: challengeStorage.getAll(),
     tasks: taskStorage.getAll(),
     settings: settingsStorage.get(),
+    topics: topicStorage.getAll(),
     exportDate: new Date().toISOString()
   };
 };
@@ -192,6 +271,7 @@ export const importData = (data: ReturnType<typeof exportData>) => {
     if (data.challenges) challengeStorage.save(data.challenges);
     if (data.tasks) taskStorage.save(data.tasks);
     if (data.settings) settingsStorage.save(data.settings);
+    if (data.topics) topicStorage.save(data.topics);
     console.log('Data imported successfully');
   } catch (error) {
     console.error('Failed to import data:', error);
