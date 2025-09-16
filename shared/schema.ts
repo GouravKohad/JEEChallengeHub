@@ -205,13 +205,19 @@ export const CHALLENGE_TYPES = [
   { id: 'dpp', name: '30 Days DPP Challenge', duration: 30, description: 'Daily Practice Problems marathon' },
   { id: 'mock', name: '45 Days Mock Test Series', duration: 45, description: 'Intensive mock test preparation' },
   { id: 'weak-areas', name: '14 Days Weak Areas Focus', duration: 14, description: 'Target your weak subjects/topics' },
-  { id: 'full-syllabus', name: '60 Days Complete Syllabus', duration: 60, description: 'Cover entire JEE syllabus systematically' }
+  { id: 'full-syllabus', name: '60 Days Complete Syllabus', duration: 60, description: 'Cover entire JEE syllabus systematically' },
+  { id: 'intensive-practice', name: '21 Days Intensive Practice', duration: 21, description: 'High-intensity problem solving with time constraints' },
+  { id: 'concept-mastery', name: '28 Days Concept Mastery', duration: 28, description: 'Deep conceptual understanding through theory and applications' },
+  { id: 'exam-simulation', name: '10 Days Exam Simulation', duration: 10, description: 'Realistic JEE exam conditions and time management' },
+  { id: 'formula-sprint', name: '7 Days Formula Sprint', duration: 7, description: 'Quick revision of all important formulas and derivations' },
+  { id: 'previous-years', name: '25 Days Previous Year Questions', duration: 25, description: 'Solve and analyze past JEE questions topic-wise' },
+  { id: 'speed-accuracy', name: '18 Days Speed & Accuracy', duration: 18, description: 'Improve solving speed while maintaining accuracy' }
 ] as const;
 
 // Schema definitions
 export const challengeSchema = z.object({
   id: z.string(),
-  type: z.string(),
+  type: z.enum(['revision', 'backlog', 'dpp', 'mock', 'weak-areas', 'full-syllabus', 'intensive-practice', 'concept-mastery', 'exam-simulation', 'formula-sprint', 'previous-years', 'speed-accuracy']),
   name: z.string(),
   duration: z.number(),
   subjects: z.array(z.enum(JEE_SUBJECTS)),
@@ -237,7 +243,7 @@ export const dailyTaskSchema = z.object({
   date: z.string(),
   subject: z.enum(JEE_SUBJECTS),
   topic: z.string(),
-  taskType: z.enum(['theory', 'practice', 'revision', 'mock-test', 'dpp']),
+  taskType: z.enum(['theory', 'practice', 'revision', 'mock-test', 'dpp', 'concept-mastery', 'intensive-practice', 'exam-simulation', 'formula-practice', 'previous-year', 'speed-drill', 'video-lecture', 'concept-mapping']),
   description: z.string(),
   timeAllotted: z.number(), // in minutes
   completed: z.boolean(),
