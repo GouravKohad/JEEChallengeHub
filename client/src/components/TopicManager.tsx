@@ -162,10 +162,10 @@ export default function TopicManager() {
   };
 
   const handleAddTopicToChapter = () => {
-    if (!newTopicName.trim() || !newTopicChapter) return;
+    if (!newTopicName.trim()) return;
 
     try {
-      if (newTopicChapter === 'Custom Topics') {
+      if (!newTopicChapter || newTopicChapter === 'Custom Topics') {
         // Add to general custom topics with class selection
         topicStorage.addTopic(newTopicSubject, newTopicName.trim(), newTopicClass);
       } else {
