@@ -8,10 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Plus, Calendar, Clock, BookOpen } from "lucide-react";
 import { CHALLENGE_TYPES, JEE_SUBJECTS, JEE_TOPICS, InsertChallenge } from "@shared/schema";
 import { addDays, format } from "date-fns";
-import { getAllTopicsForSubject } from "@/lib/topicUtils";
+import { getAllTopicsForSubject, getTopicsByGradeAndChapter, isCustomTopic } from "@/lib/topicUtils";
 
 interface ChallengeCreationModalProps {
   onCreateChallenge?: (challenge: InsertChallenge) => void;
@@ -197,33 +198,74 @@ export default function ChallengeCreationModal({ onCreateChallenge, children }: 
           {selectedSubjects.length > 0 && (
             <div className="space-y-4">
               <Label className="text-base font-semibold">Select Topics</Label>
-              {selectedSubjects.map((subject) => (
-                <Card key={subject}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{subject}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {getAllTopicsForSubject(subject as 'Physics' | 'Chemistry' | 'Mathematics').map((topic) => (
-                        <div key={topic} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`${subject}-${topic}`}
-                            checked={(selectedTopics[subject] || []).includes(topic)}
-                            onCheckedChange={() => handleTopicToggle(subject, topic)}
-                            data-testid={`checkbox-topic-${subject}-${topic}`}
-                          />
-                          <Label 
-                            htmlFor={`${subject}-${topic}`} 
-                            className="text-sm leading-tight"
-                          >
-                            {topic}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {selectedSubjects.map((subject) => {
+                const gradeTopics = getTopicsByGradeAndChapter(subject as 'Physics' | 'Chemistry' | 'Mathematics');
+                return (
+                  <Card key={subject}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">{subject}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Accordion type="multiple" className="w-full">
+                        {Object.entries(gradeTopics).map(([grade, chapters]) => {
+                          const hasChapters = Object.keys(chapters).length > 0;
+                          if (!hasChapters) return null;
+                          
+                          return (
+                            <AccordionItem key={`${subject}-${grade}`} value={`${subject}-${grade}`}>
+                              <AccordionTrigger className="text-base font-medium">
+                                <div className="flex items-center gap-2">
+                                  <span>{grade}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {Object.values(chapters).flat().length} topics
+                                  </Badge>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent>
+                                <div className="space-y-4">
+                                  {Object.entries(chapters).map(([chapter, topics]) => (
+                                    <div key={`${subject}-${chapter}`} className="space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="font-medium text-sm text-muted-foreground">{chapter}</h4>
+                                        <Badge variant="secondary" className="text-xs">
+                                          {topics.length}
+                                        </Badge>
+                                      </div>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 ml-4">
+                                        {topics.map((topic) => (
+                                          <div key={topic} className="flex items-center space-x-2">
+                                            <Checkbox 
+                                              id={`${subject}-${topic}`}
+                                              checked={(selectedTopics[subject] || []).includes(topic)}
+                                              onCheckedChange={() => handleTopicToggle(subject, topic)}
+                                              data-testid={`checkbox-topic-${subject}-${topic}`}
+                                            />
+                                            <Label 
+                                              htmlFor={`${subject}-${topic}`} 
+                                              className="text-sm leading-tight flex items-center gap-1"
+                                            >
+                                              {topic}
+                                              {isCustomTopic(subject as 'Physics' | 'Chemistry' | 'Mathematics', topic) && (
+                                                <Badge variant="outline" className="text-xs px-1">
+                                                  Custom
+                                                </Badge>
+                                              )}
+                                            </Label>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
+                        })}
+                      </Accordion>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
 
