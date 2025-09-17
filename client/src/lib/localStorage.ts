@@ -13,10 +13,15 @@ export interface StorageSettings {
   userId: string;
 }
 
+export interface CustomTopicWithClass {
+  name: string;
+  class: '11th' | '12th';
+}
+
 export interface CustomTopics {
-  Physics: string[];
-  Chemistry: string[];
-  Mathematics: string[];
+  Physics: CustomTopicWithClass[];
+  Chemistry: CustomTopicWithClass[];
+  Mathematics: CustomTopicWithClass[];
 }
 
 export interface CustomChapters {
@@ -192,7 +197,32 @@ export const topicStorage = {
   getAll(): CustomTopics {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.TOPICS);
-      return data ? JSON.parse(data) : { Physics: [], Chemistry: [], Mathematics: [] };
+      if (data) {
+        const parsed = JSON.parse(data);
+        // Handle migration from old string[] format to new CustomTopicWithClass[] format
+        const migrated: CustomTopics = {
+          Physics: [],
+          Chemistry: [],
+          Mathematics: []
+        };
+        
+        Object.keys(parsed).forEach((subject) => {
+          const subjectKey = subject as keyof CustomTopics;
+          if (Array.isArray(parsed[subjectKey])) {
+            parsed[subjectKey].forEach((item: any) => {
+              if (typeof item === 'string') {
+                // Old format - migrate to new format with default 12th class
+                migrated[subjectKey].push({ name: item, class: '12th' });
+              } else if (item && typeof item === 'object' && item.name && item.class) {
+                // New format
+                migrated[subjectKey].push(item);
+              }
+            });
+          }
+        });
+        return migrated;
+      }
+      return { Physics: [], Chemistry: [], Mathematics: [] };
     } catch (error) {
       console.error('Failed to load custom topics from localStorage:', error);
       return { Physics: [], Chemistry: [], Mathematics: [] };
@@ -207,20 +237,24 @@ export const topicStorage = {
     }
   },
 
-  addTopic(subject: 'Physics' | 'Chemistry' | 'Mathematics', topic: string): CustomTopics {
+  addTopic(subject: 'Physics' | 'Chemistry' | 'Mathematics', topic: string, classLevel: '11th' | '12th' = '12th'): CustomTopics {
     const topics = this.getAll();
-    if (!topics[subject].includes(topic)) {
-      topics[subject].push(topic);
+    const existingTopic = topics[subject].find(t => t.name === topic);
+    if (!existingTopic) {
+      topics[subject].push({ name: topic, class: classLevel });
       this.save(topics);
     }
     return topics;
   },
 
-  updateTopic(subject: 'Physics' | 'Chemistry' | 'Mathematics', oldTopic: string, newTopic: string): CustomTopics {
+  updateTopic(subject: 'Physics' | 'Chemistry' | 'Mathematics', oldTopic: string, newTopic: string, newClass?: '11th' | '12th'): CustomTopics {
     const topics = this.getAll();
-    const index = topics[subject].indexOf(oldTopic);
+    const index = topics[subject].findIndex(t => t.name === oldTopic);
     if (index !== -1) {
-      topics[subject][index] = newTopic;
+      topics[subject][index] = {
+        name: newTopic,
+        class: newClass || topics[subject][index].class
+      };
       this.save(topics);
     }
     return topics;
@@ -228,16 +262,17 @@ export const topicStorage = {
 
   removeTopic(subject: 'Physics' | 'Chemistry' | 'Mathematics', topic: string): CustomTopics {
     const topics = this.getAll();
-    topics[subject] = topics[subject].filter(t => t !== topic);
+    topics[subject] = topics[subject].filter(t => t.name !== topic);
     this.save(topics);
     return topics;
   },
 
-  addMultipleTopics(subject: 'Physics' | 'Chemistry' | 'Mathematics', newTopics: string[]): CustomTopics {
+  addMultipleTopics(subject: 'Physics' | 'Chemistry' | 'Mathematics', newTopics: string[], classLevel: '11th' | '12th' = '12th'): CustomTopics {
     const topics = this.getAll();
     newTopics.forEach(topic => {
-      if (!topics[subject].includes(topic)) {
-        topics[subject].push(topic);
+      const existingTopic = topics[subject].find(t => t.name === topic);
+      if (!existingTopic) {
+        topics[subject].push({ name: topic, class: classLevel });
       }
     });
     this.save(topics);
@@ -248,6 +283,20 @@ export const topicStorage = {
     const emptyTopics = { Physics: [], Chemistry: [], Mathematics: [] };
     this.save(emptyTopics);
     return emptyTopics;
+  },
+
+  // Helper method to get topics for a specific class
+  getTopicsForClass(subject: 'Physics' | 'Chemistry' | 'Mathematics', classLevel: '11th' | '12th'): string[] {
+    const topics = this.getAll();
+    return topics[subject]
+      .filter(topic => topic.class === classLevel)
+      .map(topic => topic.name);
+  },
+
+  // Helper method to get all topic names (for backward compatibility)
+  getTopicNames(subject: 'Physics' | 'Chemistry' | 'Mathematics'): string[] {
+    const topics = this.getAll();
+    return topics[subject].map(topic => topic.name);
   }
 };
 

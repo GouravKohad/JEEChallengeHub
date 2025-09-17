@@ -1,5 +1,5 @@
 import { JEE_TOPICS, JEE_CHAPTERS, getChaptersForSubject, getTopicsForChapter, getAllTopicsForSubject as getSchemaTopics, getChapterForTopic } from '@shared/schema';
-import { CustomTopics, topicStorage } from '@/lib/localStorage';
+import { CustomTopics, CustomTopicWithClass, topicStorage } from '@/lib/localStorage';
 
 // Helper function to get all topics (default + custom) for a subject
 export const getAllTopicsForSubject = (subject: 'Physics' | 'Chemistry' | 'Mathematics'): string[] => {
@@ -7,7 +7,8 @@ export const getAllTopicsForSubject = (subject: 'Physics' | 'Chemistry' | 'Mathe
   const customTopics = topicStorage.getAll();
   
   // Merge default and custom topics, removing duplicates
-  const allTopics = [...defaultTopics, ...customTopics[subject]];
+  const customTopicNames = customTopics[subject].map(topic => topic.name);
+  const allTopics = [...defaultTopics, ...customTopicNames];
   return Array.from(new Set(allTopics)).sort();
 };
 
@@ -47,7 +48,7 @@ export const organizeTopicsByCategory = (subject: 'Physics' | 'Chemistry' | 'Mat
   // Add custom topics to a separate category
   const customTopics = topicStorage.getAll()[subject];
   if (customTopics.length > 0) {
-    categories['Custom Topics'] = customTopics;
+    categories['Custom Topics'] = customTopics.map(topic => topic.name);
   }
   
   return categories;
@@ -67,7 +68,7 @@ export const getChaptersWithTopics = (subject: 'Physics' | 'Chemistry' | 'Mathem
   // Add custom topics if they exist
   const customTopics = topicStorage.getAll()[subject];
   if (customTopics.length > 0) {
-    result['Custom Topics'] = customTopics;
+    result['Custom Topics'] = customTopics.map(topic => topic.name);
   }
   
   return result;
@@ -158,10 +159,22 @@ export const getChaptersByGrade = (subject: 'Physics' | 'Chemistry' | 'Mathemati
     }
   });
   
-  // Add custom topics to 12th Grade section
+  // Add custom topics to their respective grade sections
   const customTopics = topicStorage.getAll()[subject];
   if (customTopics.length > 0) {
-    result['12th Grade']['Custom Topics'] = customTopics;
+    // Group custom topics by class
+    const customTopicsByClass = {
+      '11th': customTopics.filter(topic => topic.class === '11th').map(topic => topic.name),
+      '12th': customTopics.filter(topic => topic.class === '12th').map(topic => topic.name)
+    };
+    
+    // Add custom topics to their respective grades
+    if (customTopicsByClass['11th'].length > 0) {
+      result['11th Grade']['Custom Topics'] = customTopicsByClass['11th'];
+    }
+    if (customTopicsByClass['12th'].length > 0) {
+      result['12th Grade']['Custom Topics'] = customTopicsByClass['12th'];
+    }
   }
   
   return result;
