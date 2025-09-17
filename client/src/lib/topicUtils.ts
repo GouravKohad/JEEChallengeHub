@@ -108,3 +108,52 @@ export const searchTopics = (query: string, subject?: 'Physics' | 'Chemistry' | 
   
   return results;
 };
+
+// Grade-level chapter mappings for JEE syllabus
+const GRADE_LEVEL_CHAPTERS = {
+  Physics: {
+    '11th Grade': ['Mechanics', 'Properties of Matter', 'Heat and Thermodynamics', 'Oscillations and Waves'],
+    '12th Grade': ['Electricity and Magnetism', 'Electromagnetic Waves and Optics', 'Modern Physics']
+  },
+  Chemistry: {
+    '11th Grade': ['Physical Chemistry'],
+    '12th Grade': ['Inorganic Chemistry', 'Organic Chemistry']
+  },
+  Mathematics: {
+    '11th Grade': ['Algebra', 'Coordinate Geometry', 'Mathematical Reasoning', 'Statistics and Probability'],
+    '12th Grade': ['Calculus', 'Vector Algebra and Geometry', 'Matrices and Determinants']
+  }
+} as const;
+
+// Helper function to get chapters organized by grade levels
+export const getChaptersByGrade = (subject: 'Physics' | 'Chemistry' | 'Mathematics') => {
+  const result: { [grade: string]: { [chapter: string]: string[] } } = {
+    '11th Grade': {},
+    '12th Grade': {}
+  };
+  
+  // Organize chapters by grade level
+  const gradeChapters = GRADE_LEVEL_CHAPTERS[subject];
+  
+  Object.entries(gradeChapters).forEach(([grade, chapters]) => {
+    chapters.forEach((chapter: string) => {
+      const topics = getTopicsForChapter(subject, chapter);
+      if (topics.length > 0) {
+        result[grade][chapter] = topics;
+      }
+    });
+  });
+  
+  // Add custom topics to 12th Grade section
+  const customTopics = topicStorage.getAll()[subject];
+  if (customTopics.length > 0) {
+    result['12th Grade']['Custom Topics'] = customTopics;
+  }
+  
+  return result;
+};
+
+// Helper function to get all topics organized by grade and chapter
+export const getTopicsByGradeAndChapter = (subject: 'Physics' | 'Chemistry' | 'Mathematics') => {
+  return getChaptersByGrade(subject);
+};
