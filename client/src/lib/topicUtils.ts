@@ -132,7 +132,11 @@ export const getChaptersByGrade = (subject: 'Physics' | 'Chemistry' | 'Mathemati
     '12th Grade': {}
   };
   
-  // Organize chapters by grade level
+  // Get all chapters from schema to ensure complete coverage
+  const allChapters = getChaptersForSubject(subject);
+  const mappedChapters = new Set<string>();
+  
+  // Organize mapped chapters by grade level
   const gradeChapters = GRADE_LEVEL_CHAPTERS[subject];
   
   Object.entries(gradeChapters).forEach(([grade, chapters]) => {
@@ -140,8 +144,18 @@ export const getChaptersByGrade = (subject: 'Physics' | 'Chemistry' | 'Mathemati
       const topics = getTopicsForChapter(subject, chapter);
       if (topics.length > 0) {
         result[grade][chapter] = topics;
+        mappedChapters.add(chapter);
       }
     });
+  });
+  
+  // Add any unmapped chapters to 12th Grade as fallback
+  const unmappedChapters = allChapters.filter(chapter => !mappedChapters.has(chapter));
+  unmappedChapters.forEach((chapter: string) => {
+    const topics = getTopicsForChapter(subject, chapter);
+    if (topics.length > 0) {
+      result['12th Grade'][chapter] = topics;
+    }
   });
   
   // Add custom topics to 12th Grade section

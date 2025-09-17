@@ -12,7 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Plus, Calendar, Clock, BookOpen } from "lucide-react";
 import { CHALLENGE_TYPES, JEE_SUBJECTS, JEE_TOPICS, InsertChallenge } from "@shared/schema";
 import { addDays, format } from "date-fns";
-import { getAllTopicsForSubject, getTopicsByGradeAndChapter, isCustomTopic } from "@/lib/topicUtils";
+import { getTopicsByGradeAndChapter, isCustomTopic } from "@/lib/topicUtils";
 
 interface ChallengeCreationModalProps {
   onCreateChallenge?: (challenge: InsertChallenge) => void;
@@ -213,7 +213,10 @@ export default function ChallengeCreationModal({ onCreateChallenge, children }: 
                           
                           return (
                             <AccordionItem key={`${subject}-${grade}`} value={`${subject}-${grade}`}>
-                              <AccordionTrigger className="text-base font-medium">
+                              <AccordionTrigger 
+                                className="text-base font-medium"
+                                data-testid={`accordion-grade-${subject}-${grade}`}
+                              >
                                 <div className="flex items-center gap-2">
                                   <span>{grade}</span>
                                   <Badge variant="outline" className="text-xs">
