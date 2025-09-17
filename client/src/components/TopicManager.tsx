@@ -32,6 +32,7 @@ export default function TopicManager() {
   const [isAddChapterDialogOpen, setIsAddChapterDialogOpen] = useState(false);
   const [newTopicName, setNewTopicName] = useState('');
   const [newTopicSubject, setNewTopicSubject] = useState<'Physics' | 'Chemistry' | 'Mathematics'>('Physics');
+  const [newTopicClass, setNewTopicClass] = useState<'11th' | '12th'>('12th');
   const [newTopicChapter, setNewTopicChapter] = useState('');
   const [newChapterName, setNewChapterName] = useState('');
   const [editingTopic, setEditingTopic] = useState<EditingTopic | null>(null);
@@ -45,8 +46,9 @@ export default function TopicManager() {
     if (!newTopicName.trim()) return;
 
     try {
-      topicStorage.addTopic(newTopicSubject, newTopicName.trim());
+      topicStorage.addTopic(newTopicSubject, newTopicName.trim(), newTopicClass);
       setNewTopicName('');
+      setNewTopicClass('12th'); // Reset to default
       setIsAddDialogOpen(false);
       forceRefresh();
     } catch (error) {
@@ -164,14 +166,15 @@ export default function TopicManager() {
 
     try {
       if (newTopicChapter === 'Custom Topics') {
-        // Add to general custom topics
-        topicStorage.addTopic(newTopicSubject, newTopicName.trim());
+        // Add to general custom topics with class selection
+        topicStorage.addTopic(newTopicSubject, newTopicName.trim(), newTopicClass);
       } else {
         // Add to specific custom chapter
         chapterStorage.addTopicToChapter(newTopicSubject, newTopicChapter, newTopicName.trim());
       }
       setNewTopicName('');
       setNewTopicChapter('');
+      setNewTopicClass('12th'); // Reset to default
       setIsAddDialogOpen(false);
       forceRefresh();
     } catch (error) {
@@ -491,6 +494,18 @@ export default function TopicManager() {
                         <SelectItem value="Physics">Physics</SelectItem>
                         <SelectItem value="Chemistry">Chemistry</SelectItem>
                         <SelectItem value="Mathematics">Mathematics</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="class">Class</Label>
+                    <Select value={newTopicClass} onValueChange={(value: any) => setNewTopicClass(value)}>
+                      <SelectTrigger data-testid="select-topic-class">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="11th">11th Grade</SelectItem>
+                        <SelectItem value="12th">12th Grade</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
