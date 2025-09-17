@@ -2,9 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Clock, Target, TrendingUp, Play, Pause } from "lucide-react";
+import { Calendar, Clock, Target, TrendingUp, Play, Pause, Download } from "lucide-react";
 import { Challenge } from "@shared/schema";
 import { format } from "date-fns";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { taskStorage } from "@/lib/localStorage";
 
 interface ChallengeCardProps {
   challenge: Challenge;
@@ -36,6 +39,128 @@ export default function ChallengeCard({ challenge, onStart, onPause, onResume, o
       onResume(challenge.id);
     } else if (challenge.status === 'archived' && onStart) {
       onStart(challenge.id);
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      // Get all tasks for this challenge
+      const allTasks = taskStorage.getAll();
+      const challengeTasks = allTasks.filter(task => task.challengeId === challenge.id)
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      // Create new PDF document
+      const doc = new jsPDF();
+      
+      // Set title
+      doc.setFontSize(20);
+      doc.text('JEE Challenge Report', 20, 20);
+      
+      // Challenge information
+      doc.setFontSize(16);
+      doc.text(challenge.name, 20, 35);
+      
+      doc.setFontSize(12);
+      let yPos = 50;
+      
+      // Basic info
+      const basicInfo = [
+        `Start Date: ${format(new Date(challenge.startDate), 'MMM dd, yyyy')}`,
+        `End Date: ${format(new Date(challenge.endDate), 'MMM dd, yyyy')}`,
+        `Duration: ${challenge.duration} days`,
+        `Daily Hours: ${challenge.dailyTimeHours} hours/day`,
+        `Status: ${challenge.status.toUpperCase()}`,
+        `Subjects: ${challenge.subjects.join(', ')}`,
+        `Progress: ${challenge.progress.completedDays}/${challenge.progress.totalDays} days completed`,
+        `Tasks: ${challenge.progress.completedTasks}/${challenge.progress.totalTasks} tasks completed`,
+        `Current Streak: ${challenge.progress.currentStreak} days`,
+        `Longest Streak: ${challenge.progress.longestStreak} days`
+      ];
+      
+      basicInfo.forEach((info) => {
+        doc.text(info, 20, yPos);
+        yPos += 8;
+      });
+      
+      // Topics by subject
+      yPos += 10;
+      doc.setFontSize(14);
+      doc.text('Topics Covered:', 20, yPos);
+      yPos += 10;
+      
+      doc.setFontSize(11);
+      Object.entries(challenge.topics).forEach(([subject, topics]) => {
+        if (topics.length > 0) {
+          doc.text(`${subject}:`, 25, yPos);
+          yPos += 6;
+          topics.forEach((topic) => {
+            doc.text(`• ${topic}`, 30, yPos);
+            yPos += 5;
+          });
+          yPos += 3;
+        }
+      });
+      
+      // Daily Tasks Table
+      if (challengeTasks.length > 0) {
+        yPos += 10;
+        doc.setFontSize(14);
+        doc.text('Daily Tasks Schedule:', 20, yPos);
+        yPos += 10;
+        
+        const tableData = challengeTasks.map(task => [
+          format(new Date(task.date), 'MMM dd'),
+          task.subject,
+          task.topic,
+          task.taskType.replace('-', ' ').toUpperCase(),
+          task.description,
+          `${task.timeAllotted} min`,
+          task.difficulty.toUpperCase(),
+          task.completed ? 'Yes' : 'No'
+        ]);
+        
+        autoTable(doc, {
+          head: [['Date', 'Subject', 'Topic', 'Type', 'Description', 'Time', 'Difficulty', 'Completed']],
+          body: tableData,
+          startY: yPos,
+          styles: {
+            fontSize: 8,
+            cellPadding: 2
+          },
+          headStyles: {
+            fillColor: [71, 85, 105], // slate-600
+            textColor: 255,
+            fontSize: 9
+          },
+          columnStyles: {
+            4: { cellWidth: 40 }, // Description column wider
+          }
+        });
+      } else {
+        yPos += 10;
+        doc.setFontSize(12);
+        doc.text('No daily tasks scheduled for this challenge yet.', 20, yPos);
+      }
+      
+      // Footer
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.text(
+          `Generated on ${format(new Date(), 'PPP')} - Page ${i} of ${pageCount}`,
+          20,
+          doc.internal.pageSize.height - 10
+        );
+      }
+      
+      // Save the PDF
+      const fileName = `${challenge.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_challenge_report.pdf`;
+      doc.save(fileName);
+      
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      alert('Failed to export PDF. Please try again.');
     }
   };
 
@@ -100,6 +225,15 @@ export default function ChallengeCard({ challenge, onStart, onPause, onResume, o
             data-testid={`button-view-${challenge.id}`}
           >
             View Details
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportPDF}
+            data-testid={`button-export-pdf-${challenge.id}`}
+            title="Export challenge details and tasks to PDF"
+          >
+            <Download className="h-4 w-4" />
           </Button>
           <Button 
             size="sm" 
